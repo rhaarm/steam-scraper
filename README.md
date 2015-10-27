@@ -12,7 +12,7 @@ If scrapy is installed, you just simply run.
 
 # increase the timeout between loads in seconds? 
 # This will cause the script to wait {seconds} minutes at the end of loading all comments, do not kill script.
->scrapy runspider spiders\steamreviews.py -a appid={Steam Game App Id} timeout=600
+>scrapy runspider spiders\steamreviews.py -a appid={Steam Game App Id} -a timeout=600
 ```
 
 If you wish to have this go to an output file, here is output CSV format.
