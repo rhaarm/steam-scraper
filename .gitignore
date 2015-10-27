@@ -60,5 +60,5 @@ target/
 .idea/
 
 # output file
-outputs.csv
-outputs.json
+*.csv
+*.json
