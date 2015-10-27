@@ -15,10 +15,11 @@ class SteamreviewsSpider(Spider):
     name = "steamreviews"
     allowed_domains = ["store.steampowered.com"]
 
-    def __init__(self, appid, *args, **kwargs):
+    def __init__(self, appid, timeout=30, *args, **kwargs):
         super(SteamreviewsSpider, self).__init__(*args, **kwargs)
         self.appid = appid
-        self.start_urls = ('http://store.steampowered.com/app/{appid}/'.format(self.appid),)
+        self.timeout = timeout
+        self.start_urls = ('http://store.steampowered.com/app/{appid}/'.format(appid=self.appid),)
         self.driver = webdriver.Firefox()
 
     def __del__(self, *args, **kwargs):
@@ -35,13 +36,13 @@ class SteamreviewsSpider(Spider):
         # supported languages in Steam.
         # TODO: dynamically iterate through all supported languages
         self.driver.execute_script(
-            "document.getElementById('LoadMoreReviewsall').getElementsByTagName('a')[0].setAttribute('onclick', \"LoadMoreReviews( {appid}, 5, 365, 'all', 'english' );\")".format(self.appid))
+            "document.getElementById('LoadMoreReviewsall').getElementsByTagName('a')[0].setAttribute('onclick', \"LoadMoreReviews( {appid}, 5, 365, 'all', 'english' );\")".format(appid=self.appid))
         while True:
             try:
                 # 30 second timeout window, if the JS takes longer to load more comments, then change.
                 # the Timeout also triggers for the script to break out of the loop, which could terminate your script to
                 # early depending on how many comments it takes to load.
-                more_btn = WebDriverWait(self.driver, 30).until(
+                more_btn = WebDriverWait(self.driver, self.timeout).until(
                     EC.visibility_of_element_located((By.ID, "LoadMoreReviewsall")))
                 more_btn.click()
             except TimeoutException as e:
