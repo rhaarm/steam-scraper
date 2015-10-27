@@ -5,7 +5,7 @@ from scrapy.http import TextResponse
 from review_scraper.items import ReviewScraperItem
 
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -46,7 +46,12 @@ class SteamreviewsSpider(Spider):
                     EC.visibility_of_element_located((By.ID, "LoadMoreReviewsall")))
                 more_btn.click()
             except TimeoutException as e:
-                break
+                pass
+            try:
+                if self.driver.find_element_by_class_name('no_more_reviews'):
+                    break
+            except NoSuchElementException as e:
+                pass
         # take the page source and put it in a Scrapy response
         response = TextResponse(url=response.url, body=self.driver.page_source, encoding='utf8')
         return self.parse_page(response)
@@ -59,8 +64,11 @@ class SteamreviewsSpider(Spider):
 
             item['user_profile'] = \
                 selector.xpath('div/div[@class="leftcol"]/div[@class="persona_name"]/a/@href').extract()[0]
-            item['user_name'] = \
-                selector.xpath('div/div[@class="leftcol"]/div[@class="persona_name"]/a/text()').extract()[0]
+            try:
+                item['user_name'] = \
+                    selector.xpath('div/div[@class="leftcol"]/div[@class="persona_name"]/a/text()').extract()[0]
+            except IndexError:
+                item['user_name'] = ''
             item['user_num_owned_games'] = \
                 selector.xpath('div/div[@class="leftcol"]/div[@class="num_owned_games"]/a/text()').extract()[0]
             item['user_reviews'] = \
