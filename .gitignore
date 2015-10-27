@@ -58,3 +58,7 @@ target/
 
 # PyCharm
 .idea/
+
+# output file
+outputs.csv
+outputs.json

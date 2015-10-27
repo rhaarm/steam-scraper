@@ -18,7 +18,7 @@ class SteamreviewsSpider(Spider):
     def __init__(self, appid, timeout=30, *args, **kwargs):
         super(SteamreviewsSpider, self).__init__(*args, **kwargs)
         self.appid = appid
-        self.timeout = timeout
+        self.timeout = int(timeout)
         self.start_urls = ('http://store.steampowered.com/app/{appid}/'.format(appid=self.appid),)
         self.driver = webdriver.Firefox()
 
