@@ -9,6 +9,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import time
 
 
 class SteamreviewsSpider(Spider):
@@ -26,8 +27,15 @@ class SteamreviewsSpider(Spider):
         self.driver.close()
         super(SteamreviewsSpider, self).__init__(*args, **kwargs)
 
+    def select_age(self, *args, **kwargs):
+        self.driver.find_element_by_xpath("//select[@id='ageYear']/option[@value='1990']").click()
+        self.driver.find_element_by_xpath("//form[@id='agecheck_form']/a").click()
+
     def parse(self, response):
         self.driver.get(response.url)
+        if 'agecheck' in self.driver.current_url:
+            self.select_age()
+            time.sleep(3)
         # this changes the Javascript on the page, I found that the "Load More" button only goes back 180 days
         # so in here it is changed to go back 365 days, I would change it based on how long the app has been around
         # TODO: dynamically determine the date range to go back
@@ -36,7 +44,8 @@ class SteamreviewsSpider(Spider):
         # supported languages in Steam.
         # TODO: dynamically iterate through all supported languages
         self.driver.execute_script(
-            "document.getElementById('LoadMoreReviewsall').getElementsByTagName('a')[0].setAttribute('onclick', \"LoadMoreReviews( {appid}, 5, 365, 'all', 'english' );\")".format(appid=self.appid))
+            "document.getElementById('LoadMoreReviewsall').getElementsByTagName('a')[0].setAttribute('onclick', \"LoadMoreReviews( {appid}, 5, 365, 'all', 'english' );\")".format(
+                appid=self.appid))
         while True:
             try:
                 # 30 second timeout window, if the JS takes longer to load more comments, then change.
