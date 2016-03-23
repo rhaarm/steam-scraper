@@ -4,11 +4,14 @@
 -- Date: 3/22/2016 9:10 AM
 --
 """
+import sys
 import json
 import time
 from datetime import datetime
 
 import re
+
+import io
 import requests
 from collections import namedtuple
 from lxml import html
@@ -44,6 +47,8 @@ class SteamReviews(object):
 
     @property
     def maxreviews(self):
+        if self.sampe_size > 0:
+            return self.sampe_size
         if self._maxreviews is None:
             r = self.session.get(self.store_url, headers=self.default_headers)
             html = self.html_response(r.content)
@@ -77,11 +82,11 @@ class SteamReviews(object):
             for item in self.parse_page(self.html_response(j['html'])):
                 self.reviews[item.review_url] = item._asdict()
                 self.idx += 1
-                if len(self) >= self.sampe_size or len(self) >= self.maxreviews:
-                    return self.reviews.values()
+                if len(self) >= self.maxreviews:
+                    return list(self.reviews.values())
                 self.last_item = item
 
-            print(self.idx, len(self), r.url, self.last_item)
+                # print(self.idx, len(self), r.url, self.last_item)
 
     @classmethod
     def selector_path(cls, selector, path):
@@ -93,18 +98,23 @@ class SteamReviews(object):
     @classmethod
     def parse_select(cls, selector):
         helpful = ''.join(cls.selector_path(selector, 'div[@class="header"]/text()'))
-        user_profile = cls.selector_path(selector, 'div/div[@class="leftcol"]/div[@class="persona_name"]/a/@href')[0]
-        user_name = cls.selector_path(selector, 'div/div[@class="leftcol"]/div[@class="persona_name"]/a/text()')[0]
+        user_profile = cls.selector_path(selector, 'div/div[@class="leftcol"]/div[@class="persona_name"]/a/@href')[
+            0]
+        user_name = cls.selector_path(selector, 'div/div[@class="leftcol"]/div[@class="persona_name"]/a/text()')[
+            0]
         user_num_owned_games = cls.selector_path(selector,
-                                                 'div/div[@class="leftcol"]/div[@class="num_owned_games"]/a/text()')[0]
-        user_reviews = cls.selector_path(selector, 'div/div[@class="leftcol"]/div[@class="num_reviews"]/a/text()')[0]
+                                                 'div/div[@class="leftcol"]/div[@class="num_owned_games"]/a/text()')[
+            0]
+        user_reviews = cls.selector_path(selector, 'div/div[@class="leftcol"]/div[@class="num_reviews"]/a/text()')[
+            0]
         recommended = cls.selector_path(selector,
                                         'div/div[@class="rightcol"]/div[@class="vote_header"]/div[@class="title ellipsis"]/a/text()')[
             0]
         hours_played = cls.selector_path(selector,
                                          'div/div[@class="rightcol"]/div[@class="vote_header"]/div[@class="hours ellipsis"]/text()')[
             0]
-        posted_date = cls.selector_path(selector, 'div/div[@class="rightcol"]/div[@class="postedDate"]/text()')[0]
+        posted_date = cls.selector_path(selector, 'div/div[@class="rightcol"]/div[@class="postedDate"]/text()')[
+            0]
         content = cls.selector_path(selector, 'div/div[@class="rightcol"]/div[@class="content"]/text()')[0]
         review_url = cls.selector_path(selector,
                                        'div/div[@class="rightcol"]/div[@class="vote_header"]/div[@class="title ellipsis"]/a/@href')[
@@ -131,13 +141,25 @@ def steam_languages():
 
 
 if __name__ == '__main__':
+    from optparse import OptionParser
+
+    parser = OptionParser()
+    parser.add_option('--appid', dest="appid", help="Steam App 'appid'", type='int')
+    parser.add_option('--sample', dest='sample_size', help='Sample Size', type='int', default=-1)
+    parser.add_option('-o', '--output', dest="output", help="Json output file", metavar='FILE')
+    (options, args) = parser.parse_args()
+
+    if not options.appid:
+        raise parser.error("appid required")
+    if not options.output:
+        output = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    else:
+        output = open(options.output, 'w+', encoding='utf8')
     st = time.time()
     try:
-        appid = "290790"
-        with open(r'D:\code\steam_scraper\custom_scraper\reviews.json', 'w+', encoding='utf8') as f:
-            session = requests.session()
-            sr = SteamReviews(session, appid, 5)
-            json.dump(list(sr.scrape()), f, ensure_ascii=False, indent=1)
-            print(len(sr))
+        session = requests.session()
+        sr = SteamReviews(session, options.appid, options.sample_size)
+        json.dump(sr.scrape(), output, ensure_ascii=False, indent=1)
+        print(len(sr))
     finally:
         print(time.time() - st)
