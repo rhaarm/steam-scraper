@@ -78,15 +78,23 @@ class SteamReviews(object):
         while True:
             r = self.data_request(self.idx)
             j = r.json()
+            
 
             for item in self.parse_page(self.html_response(j['html'])):
                 self.reviews[item.review_url] = item._asdict()
                 self.idx += 1
-                if len(self) >= self.maxreviews:
-                    return list(self.reviews.values())
-                self.last_item = item
 
-                # print(self.idx, len(self), r.url, self.last_item)
+                if self.idx > self.maxreviews:
+                    sys.exit(0)
+                elif len(self) >= self.maxreviews:
+                 return list(self.reviews.values())
+                self.last_item = item
+                #print(self.idx,len(self), r.url, self.last_item)
+
+
+                
+                 
+
 
     @classmethod
     def selector_path(cls, selector, path):
@@ -108,16 +116,16 @@ class SteamReviews(object):
         user_reviews = cls.selector_path(selector, 'div/div[@class="leftcol"]/div[@class="num_reviews"]/a/text()')[
             0]
         recommended = cls.selector_path(selector,
-                                        'div/div[@class="rightcol"]/div[@class="vote_header"]/div[@class="title ellipsis"]/a/text()')[
+                                        'div/div[@class="rightcol"]/a[@class="vote_header tooltip"]/div[@class="title ellipsis"]/text()')[
             0]
         hours_played = cls.selector_path(selector,
-                                         'div/div[@class="rightcol"]/div[@class="vote_header"]/div[@class="hours ellipsis"]/text()')[
+                                         'div/div[@class="rightcol"]/a[@class="vote_header tooltip"]/div[@class="hours ellipsis"]/text()')[
             0]
         posted_date = cls.selector_path(selector, 'div/div[@class="rightcol"]/div[@class="postedDate"]/text()')[
             0]
-        content = cls.selector_path(selector, 'div/div[@class="rightcol"]/div[@class="content"]/text()')[0]
+        content = "".join(cls.selector_path(selector, 'div/div[@class="rightcol"]/div[@class="content"]/text()'))
         review_url = cls.selector_path(selector,
-                                       'div/div[@class="rightcol"]/div[@class="vote_header"]/div[@class="title ellipsis"]/a/@href')[
+                                       'div/div[@class="rightcol"]/a/@href')[
             0]
         return ReviewScraperItem(helpful=helpful, user_profile=user_profile, user_name=user_name,
                                  user_num_owned_games=user_num_owned_games, user_reviews=user_reviews,
